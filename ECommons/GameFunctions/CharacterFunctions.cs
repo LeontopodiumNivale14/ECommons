@@ -1,6 +1,8 @@
 ﻿using Dalamud.Game.ClientState.Objects.Types;
+using ECommons.DalamudServices;
 using ECommons.MathHelpers;
 using FFXIVClientStructs.FFXIV.Client.Game;
+using FFXIVClientStructs.FFXIV.Client.Game.Character;
 using FFXIVClientStructs.FFXIV.Client.Game.Object;
 using System;
 using System.Collections.Generic;
@@ -67,22 +69,43 @@ public static unsafe class CharacterFunctions
         return CombatRole.NonCombat;
     }
 
+    extension(IBattleChara v)
+    {
+        public CastInfo CastInfo
+        {
+            get
+            {
+                var info = v.Struct()->GetCastInfo();
+                if(info == null)
+                {
+                    return default;
+                }
+                var ret = *info;
+                //ret.ActionType = (*(byte*)(((nint)info) + 1));
+                return ret;
+            }
+        }
+    }
+
     public static bool IsCasting(this IBattleChara c, uint spellId = 0, ActionType? type = null)
     {
-        if(c.Struct()->GetCastInfo() == null) return false;
-        return c.IsCasting && (spellId == 0 || (c.CastActionId.EqualsAny(spellId) && (type == null || c.CastActionType == (byte)type.Value)));
+        var info = c.CastInfo;
+        if(info.ActionId == 0) return false;
+        return c.IsCasting && (spellId == 0 || (info.ActionId.EqualsAny(spellId) && (type == null || info.ActionType == (byte)type.Value)));
     }
 
     public static bool IsCasting(this IBattleChara c, params uint[] spellId)
     {
-        if(c.Struct()->GetCastInfo() == null) return false;
-        return c.IsCasting && c.CastActionId.EqualsAny(spellId);
+        var info = c.CastInfo;
+        if(info.ActionId == 0) return false;
+        return c.IsCasting && info.ActionId.EqualsAny(spellId);
     }
 
     public static bool IsCasting(this IBattleChara c, IEnumerable<uint> spellId)
     {
-        if(c.Struct()->GetCastInfo() == null) return false;
-        return c.IsCasting && c.CastActionId.EqualsAny(spellId);
+        var info = c.CastInfo;
+        if(info.ActionId == 0) return false;
+        return c.IsCasting && info.ActionId.EqualsAny(spellId);
     }
 
     extension(IGameObject obj)
@@ -100,6 +123,39 @@ public static unsafe class CharacterFunctions
 
     extension(IBattleChara b)
     {
-        public float RemainingCastTime => b.TotalCastTime - b.CurrentCastTime;
+        public float RemainingCastTime => b.CastInfo.TotalCastTime - b.CastInfo.CurrentCastTime;
+    }
+
+    public static List<TetherInfo> GetTethers(this ICharacter c, bool onlySource = false)
+    {
+        List<TetherInfo> ret = [];
+        {
+            var t = c.Struct()->Vfx.Tethers;
+            for(int i = 0; i < t.Length; i++)
+            {
+                if(t[i].Id != 0)
+                {
+                    ret.Add(new(t[i], t[i].TargetId.ObjectId, true));
+                }
+            }
+        }
+        if(!onlySource)
+        {
+            foreach(var obj in Svc.Objects)
+            {
+                if(obj is ICharacter chr)
+                {
+                    var t = chr.Struct()->Vfx.Tethers;
+                    for(int i = 0; i < t.Length; i++)
+                    {
+                        if(t[i].Id != 0 && t[i].TargetId == c.GameObjectId)
+                        {
+                            ret.Add(new(t[i], chr.ObjectId, false));
+                        }
+                    }
+                }
+            }
+        }
+        return ret;
     }
 }

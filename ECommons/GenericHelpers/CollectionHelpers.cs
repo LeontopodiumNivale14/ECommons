@@ -10,6 +10,26 @@ using System.Threading.Tasks;
 namespace ECommons;
 public static unsafe partial class GenericHelpers
 {
+    [OverloadResolutionPriority(1)]
+    public static bool IsNullOrEmpty<T>(this List<T> value)
+    {
+        if(value == null) return true;
+        return value.Count == 0;
+    }
+
+    [OverloadResolutionPriority(1)]
+    public static bool IsNullOrEmpty<T>(this T[] value)
+    {
+        if(value == null) return true;
+        return value.Length == 0;
+    }
+
+    public static bool IsNullOrEmpty<T>(this IEnumerable<T> value)
+    {
+        if(value == null) return true;
+        return !value.Any();
+    }
+
     public static IEnumerable<T> TakeEvery<T>(this IEnumerable<T> values, int num)
     {
         var i = 0;
@@ -69,7 +89,9 @@ public static unsafe partial class GenericHelpers
     /// <param name="enumerable"></param>
     /// <returns></returns>
     public static T GetRandom<T>(this IEnumerable<T> enumerable)
-        => enumerable.ElementAt(Random.Shared.Next(enumerable.Count()));
+    {
+        return enumerable.ElementAt(Random.Shared.Next(enumerable.Count()));
+    }
 
     /// <inheritdoc cref="SafeSelect{K, V}(IReadOnlyDictionary{K, V}, K, V)"/>
     public static V? SafeSelect<K, V>(this IReadOnlyDictionary<K, V> dictionary, K? key) => SafeSelect(dictionary, key, default);

@@ -2,7 +2,7 @@
 using FFXIVClientStructs.FFXIV.Component.GUI;
 using System.Collections.Generic;
 using Callback = ECommons.Automation.Callback;
-using ValueType = FFXIVClientStructs.FFXIV.Component.GUI.ValueType;
+
 
 namespace ECommons.UIHelpers.AddonMasterImplementations;
 
@@ -28,15 +28,17 @@ public partial class AddonMaster
         /// Keeps the current number of missions that are displayed. <br></br>
         /// This includes the tabs seperating the missions by type [A, B, C, D]
         /// </summary>
-        public uint NumEntries => Addon->AtkValues[32].UInt; // Should be 17 as of phaenna
+        public uint NumEntries => Addon->AtkValues[33].UInt; // Should be 17 as of phaenna
 
-        public uint SelectedMissionId => Addon->AtkValues[1062].UInt;
+        public uint CurrentTab => Addon->AtkValues[27].UInt;
+
+        public uint SelectedMissionId => Addon->AtkValues[1063].UInt;
         public string SelectedMissionName
         {
             get
             {
-                var missionName = Addon->AtkValues[1063];
-                if(missionName.Type.EqualsAny(ValueType.String, ValueType.ManagedString, ValueType.String8))
+                var missionName = Addon->AtkValues[1064];
+                if(missionName.Type.EqualsAny(AtkValueType.String, AtkValueType.ManagedString, AtkValueType.String8))
                 {
                     return MemoryHelper.ReadSeStringNullTerminated((nint)missionName.String.Value).GetText();
                 }
@@ -51,14 +53,14 @@ public partial class AddonMaster
                 var ret = new List<StellarMissions>();
                 for(var i = 0; i < NumEntries; i++)
                 {
-                    var missionName = Addon->AtkValues[803 + i * 2];
-                    var missionId = Addon->AtkValues[41 + i * 6].UInt;
+                    var missionName = Addon->AtkValues[802 + (i * 2)];
+                    var missionId = Addon->AtkValues[36 + (i * 6)].UInt;
 
                     // category header?
                     if(missionId == 0)
                         continue;
 
-                    if(missionName.Type.EqualsAny(ValueType.String, ValueType.ManagedString, ValueType.String8))
+                    if(missionName.Type.EqualsAny(AtkValueType.String, AtkValueType.ManagedString, AtkValueType.String8))
                     {
                         var mission = new StellarMissions(this, i)
                         {
